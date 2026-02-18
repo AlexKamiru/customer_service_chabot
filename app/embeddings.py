@@ -2,18 +2,17 @@ import os
 import faiss
 import numpy as np
 import pickle
-from openai import OpenAI
+from sentence_transformers import SentenceTransformer
 
 from app.config import (
-    OPENAI_API_KEY,
     EMBEDDING_MODEL,
     DATA_PATH,
     FAISS_INDEX_FILE,
     METADATA_FILE
 )
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
+# Load Sentence-Transformer model once (offline, free)
+model = SentenceTransformer("all-MiniLM-L6-v2")  # lightweight, fast, free
 
 def load_documents():
     """
@@ -33,8 +32,7 @@ def load_documents():
 
 def chunk_text_by_paragraph(text):
     """
-    Split text into paragraphs.
-    Removes empty chunks.
+    Split text into paragraphs and remove empty chunks.
     """
     paragraphs = text.split("\n\n")
     return [p.strip() for p in paragraphs if p.strip()]
@@ -42,15 +40,10 @@ def chunk_text_by_paragraph(text):
 
 def create_embeddings(texts):
     """
-    Generate embeddings using OpenAI.
+    Generate embeddings using local Sentence-Transformer model.
     """
-    response = client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=texts
-    )
-    
-    embeddings = [item.embedding for item in response.data]
-    return np.array(embeddings).astype("float32")
+    embeddings = model.encode(texts, convert_to_numpy=True)
+    return embeddings.astype("float32")
 
 
 def build_vector_store():
@@ -77,12 +70,16 @@ def build_vector_store():
 
     embeddings = create_embeddings(all_chunks)
 
+    # Create FAISS index
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings)
 
+    # Save FAISS index
+    os.makedirs(os.path.dirname(FAISS_INDEX_FILE), exist_ok=True)
     faiss.write_index(index, FAISS_INDEX_FILE)
 
+    # Save metadata
     with open(METADATA_FILE, "wb") as f:
         pickle.dump(metadata, f)
 

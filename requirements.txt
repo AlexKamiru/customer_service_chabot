@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-openai
+ollama
 faiss-cpu
 numpy
 python-dotenv
