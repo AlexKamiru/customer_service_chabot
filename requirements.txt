@@ -5,3 +5,4 @@ faiss-cpu
 numpy
 python-dotenv
 pydantic
+sentence-transformers

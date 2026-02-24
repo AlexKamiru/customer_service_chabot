@@ -6,29 +6,45 @@ from app.prompts import RAG_PROMPT_TEMPLATE
 
 def generate_answer(context_chunks, question):
     """
-    Generate a grounded answer using retrieved context and the local ollama model.
-
-    Args:
-        context_chunks(list of dicts): [{text,source_file,chunk_id,score},...]
-        question (str): user query
-
-    Returns:
-        str: LLM-generated answer    
+    Generate a grounded answer with structured citations. 
     """
 
-    #1. Combine retrieved chunks
+    #1 Assign numeric IDs to chunks
+    numbered_chunks = []
+
+    for i, chunk in enumerate(context_chunks, start=1):
+        numbered_chunks.append({
+            "id": i,
+            **chunk
+        })
+
+
+    #2 Build context with explicit chunk IDs
     context_text = "\n\n".join(
-        [f"source: {c['source_file']}\n{c['text']}" for c in context_chunks]
-    )
-
-    #2. Create prompt
-    prompt = RAG_PROMPT_TEMPLATE.format(context=context_text, question=question)
+        [
+          f"[{chunk['id']}] Source: {chunk['source_file']} (chunk {chunk['chunk_id']})\n{chunk['text']}"
+            for chunk in numbered_chunks
+        ]
+    )    
     
-    #3. Generate answer via Ollama
+
+    #3 Build prompt
+    prompt = RAG_PROMPT_TEMPLATE.format(
+        context = context_text,
+        question = question
+     )
+    
+    #4 Generate response
     response = ollama.chat(
-        model= MODEL_NAME,
-        messages=[{"role":"user" , "content": prompt}]
+        model = MODEL_NAME,
+        messages= [{"role":"user", "content":prompt}]
     )
 
-    #4. Return the content
-    return response["message"]["content"]
+    answer_text =response["message"]["content"]
+
+    #5 Build deterministic sources section
+    sources_section = "\n\nSources:\n"
+    for chunk in numbered_chunks:
+        sources_section += f"[{chunk['id']}] {chunk['source_file']} (chunk {chunk['chunk_id']})\n"
+
+    return answer_text.strip() + sources_section
