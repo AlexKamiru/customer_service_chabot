@@ -3,10 +3,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# OpenAI
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-LLM_MODEL = "gpt-4"
-EMBEDDING_MODEL = "text-embedding-3-small"
 
 # Retrieval
 TOP_K = 3

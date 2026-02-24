@@ -5,7 +5,6 @@ import pickle
 from sentence_transformers import SentenceTransformer
 
 from app.config import (
-    EMBEDDING_MODEL,
     DATA_PATH,
     FAISS_INDEX_FILE,
     METADATA_FILE
