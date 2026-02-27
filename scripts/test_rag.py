@@ -1,7 +1,7 @@
 from app.retriever import retrieve
 from app.llm import generate_answer
 
-query = "How do I track my order?"
+query = "Can I cancel my order?"
 
 #1: Retrieve top 2 relevant chunks
 results= retrieve(query, top_k=2)
