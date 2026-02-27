@@ -1,85 +1,57 @@
 # app/main.py
 
 from fastapi import FastAPI, HTTPException
-from app.schemas import (
-    RAGRequest,
-    RAGResponse,
-    SourceReference,
-    RetrievedChunk,
-)
+from app.schemas import RAGRequest, RAGResponse, SourceReference, RetrievedChunk
 from app.retriever import retrieve
 from app.llm import generate_answer
 from app.logger import log_query
+from typing import List
 
-app = FastAPI()
+app = FastAPI(
+    title="Customer Service Chatbot API",
+    description="RAG-based chatbot that retrieves documents and generates answers with citations.",
+    version="1.0"
+)
 
 
 @app.post("/chat", response_model=RAGResponse)
 def chat(request: RAGRequest):
 
     question = request.question.strip()
-
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        # ----------------------------------
-        # 1. Retrieval (returns List[dict])
-        # ----------------------------------
-        raw_chunks = retrieve(question)
+        # 1️ Retrieve top-k chunks
+        retrieved_chunks: List[RetrievedChunk] = retrieve(question)
 
-        # ----------------------------------
-        # 2. Convert dict -> RetrievedChunk
-        # ----------------------------------
-        retrieved_chunks = [
-            RetrievedChunk(
-                source_file=chunk["source_file"],
-                chunk_id=chunk["chunk_id"],
-                score=chunk.get("score"),
-                text=chunk.get("text", ""),
-            )
-            for chunk in raw_chunks
-        ]
+        # 2️ Handle empty retrieval gracefully
+        if not retrieved_chunks:
+            answer_text = "Sorry, I could not find relevant information."
+            sources: List[SourceReference] = []
+        else:
+            # 3️ Generate grounded answer
+            rag_response: RAGResponse = generate_answer(retrieved_chunks, question)
+            answer_text = rag_response.answer
+            sources = rag_response.sources
 
-        # ----------------------------------
-        # 3. Generate Answer
-        # ----------------------------------
-        answer = generate_answer(raw_chunks, question)
-
-        # ----------------------------------
-        # 4. Build API response sources
-        # ----------------------------------
-        sources = [
-            SourceReference(
-                source_file=chunk.source_file,
-                chunk_id=chunk.chunk_id,
-            )
-            for chunk in retrieved_chunks
-        ]
-
-        # ----------------------------------
-        # 5. Structured Logging
-        # ----------------------------------
+        # 4️ Log the interaction
         log_query(
             user_question=question,
             retrieved_chunks=retrieved_chunks,
-            llm_response=answer,
-            level="info",
+            llm_response=answer_text,
+            level="info"
         )
 
-        return RAGResponse(
-            answer=answer,
-            sources=sources,
-        )
+        # 5️ Return structured response
+        return RAGResponse(answer=answer_text, sources=sources)
 
     except Exception as e:
-
-        # Error logging (no chunks available)
+        # 6️ Log unexpected errors
         log_query(
             user_question=question,
-            retrieved_chunks=None,
+            retrieved_chunks=retrieved_chunks if 'retrieved_chunks' in locals() else None,
             llm_response=None,
-            level="error",
+            level="error"
         )
-
         raise HTTPException(status_code=500, detail=str(e))
