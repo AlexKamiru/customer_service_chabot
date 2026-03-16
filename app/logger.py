@@ -32,6 +32,7 @@ def log_query(
     retrieved_chunks: Optional[List[RetrievedChunk]],
     llm_response: Optional[str],
     level: str = "info",
+    request_id: Optional[str] = None,
 ) -> None:
     """
     Logs a structured RAG interaction.
@@ -40,6 +41,7 @@ def log_query(
 
     log_payload = {
         "timestamp": datetime.utcnow().isoformat(),
+        "request_id": request_id,
         "user_question": user_question,
         "retrieved_chunks": [
             {

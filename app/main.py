@@ -1,5 +1,5 @@
 # app/main.py
-
+import uuid
 from fastapi import FastAPI, HTTPException
 from app.schemas import RAGRequest, RAGResponse, SourceReference, RetrievedChunk
 from app.retriever import retrieve
@@ -27,16 +27,17 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     error_trace = traceback.format_exc()
 
+    import logging 
+    logging.getLogger("rag_logger").error(
+        f"Unhandled error at {request.url.path}\n{error_trace}"
+    )
+
     log_query(
         user_question= "UNHANDLED_EXCEPTION",
         retrieved_chunks=None,
         llm_response=None,
         level="error"
     )
-
-    #also log traceback separately
-    import logging
-    logging.getLogger("rag_logger").error(error_trace)
 
     return JSONResponse(
         status_code=500,
@@ -57,47 +58,43 @@ def readiness_check():
         return{"status":"ready"}
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"service not ready:{str(e)}")
-    
+
+#REQUEST ID 
+def generate_request_id() -> str:
+    '''Generate a unique request ID for tracing''' 
+    return str(uuid.uuid4())   
 
 #chat Endpoint
 @app.post("/chat", response_model=RAGResponse)
 def chat(request: RAGRequest):
+    #Generate Request ID
+    request_id = generate_request_id()
 
     question = request.question.strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
+    
+    # 1️ Retrieve top-k chunks
+    retrieved_chunks: List[RetrievedChunk] = retrieve(question)
 
-    try:
-        # 1️ Retrieve top-k chunks
-        retrieved_chunks: List[RetrievedChunk] = retrieve(question)
+    # 2️ Handle empty retrieval gracefully
+    if not retrieved_chunks:
+        answer_text = "Sorry, I could not find relevant information."
+        sources: List[SourceReference] = []
+    else:
+        # 3️ Generate grounded answer
+        rag_response: RAGResponse = generate_answer(retrieved_chunks, question)
+        answer_text = rag_response.answer
+        sources = rag_response.sources
 
-        # 2️ Handle empty retrieval gracefully
-        if not retrieved_chunks:
-            answer_text = "Sorry, I could not find relevant information."
-            sources: List[SourceReference] = []
-        else:
-            # 3️ Generate grounded answer
-            rag_response: RAGResponse = generate_answer(retrieved_chunks, question)
-            answer_text = rag_response.answer
-            sources = rag_response.sources
-
-        # 4️ Log the interaction
-        log_query(
-            user_question=question,
-            retrieved_chunks=retrieved_chunks,
-            llm_response=answer_text,
-            level="info"
+    # 4️ Log with Request ID interaction
+    log_query(
+        user_question=question,
+        retrieved_chunks=retrieved_chunks,
+        llm_response=answer_text,
+        level="info",
+        request_id = request_id
         )
 
-        # 5️ Return structured response
-        return RAGResponse(answer=answer_text, sources=sources)
+    return RAGResponse(answer=answer_text, sources=sources)
 
-    except Exception as e:
-        # 6️ Log unexpected errors
-        log_query(
-            user_question=question,
-            retrieved_chunks=retrieved_chunks if 'retrieved_chunks' in locals() else None,
-            llm_response=None,
-            level="error"
-        )
-        raise HTTPException(status_code=500, detail="Internal server error")
