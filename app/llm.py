@@ -8,7 +8,7 @@ Returns structured citations with the answer.
 
 import ollama
 
-MODEL_NAME= "phi3:mini"  #the local model
+MODEL_NAME= "tinyllama"  #the local model
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
