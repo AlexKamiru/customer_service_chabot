@@ -5,8 +5,6 @@ generates grounded answers from retrieved chunks using the local Ollama model.
 Returns structured citations with the answer.
 """
 
-
-import ollama
 from ollama import Client
 
 MODEL_NAME= "tinyllama"  #the local model
