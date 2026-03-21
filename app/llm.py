@@ -7,8 +7,14 @@ Returns structured citations with the answer.
 
 
 import ollama
+from ollama import Client
 
 MODEL_NAME= "tinyllama"  #the local model
+
+#use ngrok URL for tunneling
+OLLAMA_HOST = " https://fibrocartilaginous-nicki-intricately.ngrok-free.dev"
+
+client = Client(host= OLLAMA_HOST)
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
@@ -38,7 +44,7 @@ def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGR
      )
     
     #4 Generate response
-    response = ollama.chat(
+    response = client.chat(
         model = MODEL_NAME,
         messages= [{"role":"user", "content":prompt}]
     )
