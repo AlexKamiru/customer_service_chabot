@@ -5,7 +5,8 @@ generates grounded answers from retrieved chunks using the local Ollama model.
 Returns structured citations with the answer.
 """
 import requests
-
+import os
+from dotenv import load_dotenv
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 from typing import List
@@ -16,7 +17,9 @@ from typing import List
 
 HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
-HF_TOKEN = "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"
+TOKEN = "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"
+
+HF_TOKEN = os.getenv("TOKEN")
 
 headers = {
     "Authorization" : f"Bearer {HF_TOKEN}"
