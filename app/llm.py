@@ -17,9 +17,7 @@ from typing import List
 
 HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
-TOKEN = "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"
-
-HF_TOKEN = os.getenv("TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 headers = {
     "Authorization" : f"Bearer {HF_TOKEN}"
