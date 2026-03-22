@@ -20,6 +20,9 @@ HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
+if not HF_TOKEN:
+    raise ValueError("HF_TOKEN is not set in environment variables")
+
 headers = {
     "Authorization" : f"Bearer {HF_TOKEN}"
 }
@@ -37,7 +40,7 @@ def query_hf(prompt: str) -> str:
         }
     }
 
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
 
     if response.status_code != 200:
         raise Exception( f"HuggingFace API error: {response.text}")
@@ -45,8 +48,8 @@ def query_hf(prompt: str) -> str:
     result = response.json()
 
     # Handle different HF response formats
-    if isinstance(result, list) and "generated_text" in result[0]:
-        return result[0]["generated_text"]
+    if isinstance(result, list):
+        return result[0].get("generated_text","")
     
     # fallback
     return str(result)
