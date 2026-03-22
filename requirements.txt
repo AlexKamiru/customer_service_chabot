@@ -6,3 +6,4 @@ numpy
 pydantic
 sentence-transformers
 python-dotenv
+requests

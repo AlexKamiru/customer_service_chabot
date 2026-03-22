@@ -82,10 +82,25 @@ def chat(request: RAGRequest):
         answer_text = "Sorry, I could not find relevant information."
         sources: List[SourceReference] = []
     else:
-        # 3️ Generate grounded answer
-        rag_response: RAGResponse = generate_answer(retrieved_chunks, question)
-        answer_text = rag_response.answer
-        sources = rag_response.sources
+        try:
+              # 3️ Generate grounded answer
+            rag_response: RAGResponse = generate_answer(retrieved_chunks, question)
+            answer_text = rag_response.answer
+            sources = rag_response.sources
+        except Exception as e:
+            #Fallback If LLM fails
+            answer_text = "The answer generation service is currently unavailable. Showing retrieved context only:\n\n"
+
+            for chunk in retrieved_chunks:
+                answer_text += f"-{chunk.text[:150]}...\n"
+
+            sources = [
+                SourceReference(
+                    source_file=chunk.source_file,
+                    chunk_id=chunk.chunk_id
+                )
+                for chunk in retrieved_chunks
+            ]       
 
     # 4️ Log with Request ID interaction
     log_query(

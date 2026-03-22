@@ -4,19 +4,54 @@ llm.py
 generates grounded answers from retrieved chunks using the local Ollama model.
 Returns structured citations with the answer.
 """
-
-from ollama import Client
-
-MODEL_NAME= "tinyllama"  #the local model
-
-#use ngrok URL for tunneling
-OLLAMA_HOST = " https://fibrocartilaginous-nicki-intricately.ngrok-free.dev"
-
-client = Client(host= OLLAMA_HOST)
+import requests
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 from typing import List
+
+# ----------------------------
+# Hugging Face Configuration.
+# ----------------------------
+
+HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+
+HF_TOKEN = "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"
+
+headers = {
+    "Authorization" : f"Bearer {HF_TOKEN}"
+}
+
+# ----------------------------
+# Hugging Face Query Function
+# ----------------------------
+
+def query_hf(prompt: str) -> str:
+    payload = {
+        "inputs" : prompt,
+        "parameters" : {
+            "max_new_tokens" : 300,
+            "temperature" : 0.7
+        }
+    }
+
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        raise Exception( f"HuggingFace API error: {response.text}")
+    
+    result = response.json()
+
+    # Handle different HF response formats
+    if isinstance(result, list) and "generated_text" in result[0]:
+        return result[0]["generated_text"]
+    
+    # fallback
+    return str(result)
+
+# --------------------------
+# Main RAH Function
+# --------------------------
 
 def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGResponse:
     """
@@ -34,7 +69,6 @@ def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGR
         ]
     )    
     
-
     #3 Build prompt
     prompt = RAG_PROMPT_TEMPLATE.format(
         context = context_text,
@@ -42,14 +76,9 @@ def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGR
      )
     
     #4 Generate response
-    response = client.chat(
-        model = MODEL_NAME,
-        messages= [{"role":"user", "content":prompt}]
-    )
+    answer_text = query_hf(prompt)
 
-    answer_text =response["message"]["content"]
-
-    #5 Build deterministic sources section
+    #5 Build structured sources
     sources: List[SourceReference] = [
         SourceReference(source_file=chunk.source_file, chunk_id=chunk.chunk_id)
         for _, chunk in numbered_chunks

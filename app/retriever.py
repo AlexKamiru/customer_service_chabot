@@ -19,10 +19,12 @@ from app.schemas import RetrievedChunk   # <- Use the schema
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 #Load FAISS index and metadata once
-index = faiss.read_index(FAISS_INDEX_FILE)
-with open(METADATA_FILE, "rb") as f:
-    metadata = pickle.load(f)
-
+try:
+    index = faiss.read_index(str(FAISS_INDEX_FILE))
+    with open(METADATA_FILE, "rb") as f:
+       metadata = pickle.load(f)
+except Exception as e:
+    raise RuntimeError(f"Failed to load vector store: {e}")
 
 def retrieve(query: str, top_k:int = TOP_K) -> List[RetrievedChunk]:
     """

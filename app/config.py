@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +13,8 @@ TEMPERATURE = 0
 MAX_TOKENS = 500
 
 # Paths
-DATA_PATH = "data"
-VECTOR_STORE_PATH = "vector_store"
-FAISS_INDEX_FILE = "vector_store/index.faiss"
-METADATA_FILE = "vector_store/metadata.pkl"
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+VECTOR_STORE_PATH = BASE_DIR / "vector_store"
+FAISS_INDEX_FILE = VECTOR_STORE_PATH / "index.faiss"
+METADATA_FILE = VECTOR_STORE_PATH / "metadata.pkl"
