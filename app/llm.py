@@ -17,6 +17,7 @@ from typing import List
 
 HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
+load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 headers = {
