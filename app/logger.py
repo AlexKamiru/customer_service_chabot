@@ -2,10 +2,16 @@
 
 import logging
 import json
+import os
 from datetime import datetime
 from typing import List, Optional
 from app.schemas import RetrievedChunk
 
+# ----------------------------------
+# REsolve absolute log path
+# ----------------------------------
+
+LOG_FILE = os.path.join(os.getcwd(), "chatbot.log")
 
 # ----------------------------------
 # Configure logger once
@@ -15,12 +21,20 @@ logger = logging.getLogger("rag_logger")
 logger.setLevel(logging.INFO)
 
 if not logger.handlers:
-    file_handler = logging.FileHandler("chatbot.log")
+    #file handler for local development
+    file_handler = logging.FileHandler(LOG_FILE)
+
+    #console handler critical for render
+    console_handler = logging.StreamHandler()
+
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(message)s"
     )
     file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
     logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
 
 # ----------------------------------
@@ -55,7 +69,9 @@ def log_query(
         "llm_response_preview": llm_response[:200] if llm_response else None,
     }
 
+    log_json = json.dumps(log_payload, ensure_ascii=False)
+
     if level.lower() == "error":
-        logger.error(json.dumps(log_payload))
+        logger.error(log_json)
     else:
-        logger.info(json.dumps(log_payload))
+        logger.info(log_json)
