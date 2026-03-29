@@ -18,7 +18,7 @@ from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 # Hugging Face Configuration.
 # ----------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+HF_API_URL = "https://api-inference.huggingface.co/hf-inference/mistralai/Mistral-7B-Instruct-v0.2"
 
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
