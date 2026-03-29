@@ -18,7 +18,7 @@ from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 # Hugging Face Configuration.
 # ----------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -35,30 +35,34 @@ HEADERS = {
 # ----------------------------
 
 def query_hf(prompt: str) -> str:
-    payload = {
-        "inputs" : prompt,
-        "parameters" : {
-            "max_new_tokens" : 300,
-            "temperature" : 0.7
-        }
-    }
+    try:
+        response = requests.post(
+            HF_API_URL,
+            headers= HEADERS,
+            json= {
+                    "inputs" : prompt,
+                    "parameters" : {
+                        "max_new_tokens" : 300,
+                        "temperature" : 0.7
+                    }
+            },
+            timeout=30
+        ) 
 
-    response = requests.post(HF_API_URL, headers=HEADERS, json=payload, timeout=30)
+        print("HF STATUS:", response.status_code)
+        print("HF RESPONSE:",response.text)
 
-    if response.status_code != 200:
-        raise Exception( f"HuggingFace API error: {response.text}")
-    
-    result = response.json()
+        response.raise_for_status()
 
-    # Handle different HF response formats
-    if isinstance(result, dict) and "error" in result:
-        raise Exception(f"Hugging Face API returned an error: {result['error']}")
-    
-    if isinstance(result, list):
-        return result[0].get("generated_text","").strip()
-    
-    # fallback
-    return str(result).strip()
+        result = response.json()
+
+        if isinstance(result, list):
+            return result[0].get("generated_text","").strip()
+        
+        return str(result)
+    except Exception as e:
+        print("HF ERROR:", str(e))
+        return "The answer generation service is currently unavailable"
 
 # --------------------------
 # Main RAG Function
