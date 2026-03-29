@@ -1,10 +1,11 @@
 # app/logger.py
-
+import sys
 import logging
 import json
 import os
 from datetime import datetime
 from typing import List, Optional
+
 from app.schemas import RetrievedChunk
 
 # ----------------------------------
@@ -21,16 +22,16 @@ logger = logging.getLogger("rag_logger")
 logger.setLevel(logging.INFO)
 
 if not logger.handlers:
-    #file handler for local development
-    file_handler = logging.FileHandler(LOG_FILE)
-
-    #console handler critical for render
-    console_handler = logging.StreamHandler()
-
     formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(message)s"
     )
+
+    #file handler for local development
+    file_handler = logging.FileHandler(LOG_FILE)
     file_handler.setFormatter(formatter)
+
+    #console handler critical for render /container logs
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)

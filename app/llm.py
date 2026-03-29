@@ -4,18 +4,21 @@ llm.py
 generates grounded answers from retrieved chunks using the local Ollama model.
 Returns structured citations with the answer.
 """
-import requests
 import os
-from dotenv import load_dotenv
+from typing import List 
+
+import requests
+from dotenv import load_dotenv 
+
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
-from typing import List
+
 
 # ----------------------------
 # Hugging Face Configuration.
 # ----------------------------
 
-HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
+HF_API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
 
 load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -23,7 +26,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 if not HF_TOKEN:
     raise ValueError("HF_TOKEN is not set in environment variables")
 
-headers = {
+HEADERS = {
     "Authorization" : f"Bearer {HF_TOKEN}"
 }
 
@@ -40,7 +43,7 @@ def query_hf(prompt: str) -> str:
         }
     }
 
-    response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=30)
+    response = requests.post(HF_API_URL, headers=HEADERS, json=payload, timeout=30)
 
     if response.status_code != 200:
         raise Exception( f"HuggingFace API error: {response.text}")
@@ -48,14 +51,17 @@ def query_hf(prompt: str) -> str:
     result = response.json()
 
     # Handle different HF response formats
+    if isinstance(result, dict) and "error" in result:
+        raise Exception(f"Hugging Face API returned an error: {result['error']}")
+    
     if isinstance(result, list):
-        return result[0].get("generated_text","")
+        return result[0].get("generated_text","").strip()
     
     # fallback
-    return str(result)
+    return str(result).strip()
 
 # --------------------------
-# Main RAH Function
+# Main RAG Function
 # --------------------------
 
 def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGResponse:
