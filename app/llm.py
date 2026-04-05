@@ -7,8 +7,8 @@ Returns structured citations with the answer.
 import os
 from typing import List 
 
-import requests
 from dotenv import load_dotenv 
+from huggingface_hub import InferenceClient
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
@@ -18,17 +18,19 @@ from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 # Hugging Face Configuration.
 # ----------------------------
 
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large"
-
 load_dotenv()
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
     raise ValueError("HF_TOKEN is not set in environment variables")
 
-HEADERS = {
-    "Authorization" : f"Bearer {HF_TOKEN}"
-}
+MODEL_NAME = "google/flan-t5-base"
+
+client = InferenceClient(
+    provider = "hf-inference",
+    api_key = HF_TOKEN,
+)
 
 # ----------------------------
 # Hugging Face Query Function
@@ -36,33 +38,16 @@ HEADERS = {
 
 def query_hf(prompt: str) -> str:
     try:
-        response = requests.post(
-            HF_API_URL,
-            headers= HEADERS,
-            json= {
-                    "inputs" : prompt,
-                    "parameters" : {
-                        "max_new_tokens" : 300,
-                        "temperature" : 0.7
-                    }
-            },
-            timeout=30
-        ) 
-
-        print("HF STATUS:", response.status_code)
-        print("HF RESPONSE:",response.text)
-
-        response.raise_for_status()
-
-        result = response.json()
-
-        if isinstance(result, list):
-            return result[0].get("generated_text","").strip()
-        
-        return str(result)
+        result = client.text_generation(
+            prompt = prompt,
+            model = MODEL_NAME,
+            max_new_tokens = 200, 
+            temperature = 0.3,
+        )
+        return result.strip()
     except Exception as e:
         print("HF ERROR:", str(e))
-        return "The answer generation service is currently unavailable"
+        return "The answer generation service is currently unavailable."
 
 # --------------------------
 # Main RAG Function
