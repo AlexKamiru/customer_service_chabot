@@ -38,7 +38,7 @@ client = InferenceClient(
 
 def query_hf(prompt: str) -> str:
     try:
-        result = client.text_generation(
+        result = client.text2text_generation(
             prompt = prompt,
             model = MODEL_NAME,
             max_new_tokens = 200, 
