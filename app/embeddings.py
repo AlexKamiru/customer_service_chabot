@@ -84,7 +84,7 @@ def build_vector_store():
 
     # Save FAISS index
     os.makedirs(os.path.dirname(FAISS_INDEX_FILE), exist_ok=True)
-    faiss.write_index(index, FAISS_INDEX_FILE)
+    faiss.write_index(index, str(FAISS_INDEX_FILE))
 
     # Save metadata
     with open(METADATA_FILE, "wb") as f:
