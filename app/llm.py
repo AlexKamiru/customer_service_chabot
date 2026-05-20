@@ -7,46 +7,35 @@ Returns structured citations with the answer.
 import os
 from typing import List 
 
+import anthropic
 from dotenv import load_dotenv 
-from huggingface_hub import InferenceClient
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 
 
-# ----------------------------
-# Hugging Face Configuration.
-# ----------------------------
-
 load_dotenv()
 
-HF_TOKEN = os.getenv("HF_TOKEN")
+client = anthropic.Anthropic() #reads Anthropic api key from env automatically
 
-if not HF_TOKEN:
-    raise ValueError("HF_TOKEN is not set in environment variables")
-
-MODEL_NAME = "google/flan-t5-base"
-
-client = InferenceClient(
-    provider = "hf-inference",
-    api_key = HF_TOKEN,
-)
+MODEL_NAME = "claude-haiku-4-5-20251001" #fastest and cheapest Claude model
 
 # ----------------------------
-# Hugging Face Query Function
+# Query Function
 # ----------------------------
 
-def query_hf(prompt: str) -> str:
+def query_claude(prompt: str) -> str:
     try:
-        result = client.text2text_generation(
-            prompt = prompt,
+        message = client.messages.create(
             model = MODEL_NAME,
-            max_new_tokens = 200, 
-            temperature = 0.3,
+            max_tokens = 500, 
+            messages=[
+                {"role": "user","content":prompt}
+            ]
         )
-        return result.strip()
+        return message.content[0].text.strip()
     except Exception as e:
-        print("HF ERROR:", str(e))
+        print("Claude ERROR:", str(e))
         return "The answer generation service is currently unavailable."
 
 # --------------------------
@@ -76,7 +65,7 @@ def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGR
      )
     
     #4 Generate response
-    answer_text = query_hf(prompt)
+    answer_text = query_claude(prompt)
 
     #5 Build structured sources
     sources: List[SourceReference] = [
