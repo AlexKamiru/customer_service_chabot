@@ -2,7 +2,7 @@ import os
 import faiss
 import numpy as np
 import pickle
-from sentence_transformers import SentenceTransformer
+import anthropic
 
 from app.config import (
     DATA_PATH,
@@ -10,8 +10,11 @@ from app.config import (
     METADATA_FILE
 )
 
-# Load Sentence-Transformer model once (offline, free)
-model = SentenceTransformer("all-MiniLM-L6-v2")  # lightweight, fast, free
+# anthropic client 
+client = anthropic.Anthropic()
+
+EMBEDDING_MODEL = "voyage-3-lite"
+EMBEDDING_DIMENSION = 512
 
 def load_documents():
     """
@@ -39,10 +42,21 @@ def chunk_text_by_paragraph(text):
 
 def create_embeddings(texts):
     """
-    Generate embeddings using local Sentence-Transformer model.
+    Generate embeddings using Anthropic's Voyage API.
     """
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return embeddings.astype("float32")
+    all_embeddings = []
+    batch_size = 128
+
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i : i + batch_size]
+        response = client.embeddings.create(
+            model = EMBEDDING_MODEL,
+            input = batch,
+        )
+        batch_embeddings = [item.embedding for item in response.data]
+        all_embeddings.extend(batch_embeddings)
+
+    return np.array(all_embeddings,dtype="float32")    
 
 
 def build_vector_store():
@@ -70,8 +84,7 @@ def build_vector_store():
     embeddings = create_embeddings(all_chunks)
 
     # Create FAISS index
-    dimension = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dimension)
+    index = faiss.IndexFlatL2(EMBEDDING_DIMENSION)
     index.add(embeddings)
 
     # Save FAISS index
