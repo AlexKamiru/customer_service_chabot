@@ -5,5 +5,5 @@ numpy
 pydantic
 python-dotenv
 requests
-anthropic
+groq
 voyageai

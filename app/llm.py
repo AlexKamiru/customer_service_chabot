@@ -6,9 +6,8 @@ Returns structured citations with the answer.
 """
 import os
 from typing import List 
-
-import anthropic
 from dotenv import load_dotenv 
+from groq import Groq
 
 from app.prompts import RAG_PROMPT_TEMPLATE
 from app.schemas import RetrievedChunk, RAGResponse, SourceReference
@@ -16,26 +15,27 @@ from app.schemas import RetrievedChunk, RAGResponse, SourceReference
 
 load_dotenv()
 
-client = anthropic.Anthropic() #reads Anthropic api key from env automatically
+client = Groq() #reads  api key from env automatically
 
-MODEL_NAME = "claude-haiku-4-5-20251001" #fastest and cheapest Claude model
+MODEL_NAME = "llama3-8b-8192" 
 
 # ----------------------------
 # Query Function
 # ----------------------------
 
-def query_claude(prompt: str) -> str:
+def query_groq(prompt: str) -> str:
     try:
-        message = client.messages.create(
+        response = client.chat.completions.create(
             model = MODEL_NAME,
             max_tokens = 500, 
             messages=[
                 {"role": "user","content":prompt}
-            ]
+            ],
+            temperature = 0.3,
         )
-        return message.content[0].text.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print("Claude ERROR:", str(e))
+        print("Groq ERROR:", str(e))
         return "The answer generation service is currently unavailable."
 
 # --------------------------
@@ -65,7 +65,7 @@ def generate_answer(context_chunks: List[RetrievedChunk], question: str) -> RAGR
      )
     
     #4 Generate response
-    answer_text = query_claude(prompt)
+    answer_text = query_groq(prompt)
 
     #5 Build structured sources
     sources: List[SourceReference] = [
