@@ -9,14 +9,16 @@ Now returns RetrievedChunk objects(typed pydantic models).
 import faiss
 import numpy as np
 import pickle
-from sentence_transformers import SentenceTransformer
+import anthropic
 from typing import List
 
 from app.config import FAISS_INDEX_FILE, METADATA_FILE, TOP_K
 from app.schemas import RetrievedChunk   # <- Use the schema
 
-#load embedding model once
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# Anthropic client
+client = anthropic.Anthropic()
+
+EMBEDDING_MODEL = "voyage-3-lite"
 
 #Load FAISS index and metadata once
 try:
@@ -25,6 +27,14 @@ try:
        metadata = pickle.load(f)
 except Exception as e:
     raise RuntimeError(f"Failed to load vector store: {e}")
+
+def embed(texts: List[str]) -> np.ndarray:
+    response = client.embeddings.create(
+        model = EMBEDDING_MODEL,
+        input = texts,
+    )
+    embeddings = [item.embedding for item in response.data]
+    return np.array(embeddings, dtype="float32")
 
 def retrieve(query: str, top_k:int = TOP_K) -> List[RetrievedChunk]:
     """
@@ -39,7 +49,7 @@ def retrieve(query: str, top_k:int = TOP_K) -> List[RetrievedChunk]:
         List[RetrievedChunk]: Retrieved chunks with similarity scores
     """
     #step 1: Embed the query
-    query_embedding= model.encode([query], convert_to_numpy= True).astype("float32")
+    query_embedding= embed([query])
 
     # step 2: Search FAISS
     distances, indices = index.search(query_embedding, top_k)
