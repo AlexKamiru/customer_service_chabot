@@ -5,10 +5,19 @@ from app.schemas import RAGRequest, RAGResponse, SourceReference, RetrievedChunk
 from app.retriever import retrieve
 from app.llm import generate_answer
 from app.logger import log_query
+from app.embeddings import build_vector_store
+from app.config import FAISS_INDEX_FILE
 from typing import List
 import traceback
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from pathlib import Path
+
+# Build vector store on first startup if missing
+if not Path(FAISS_INDEX_FILE).exists():
+    print("Vector store not found, building now...")
+    build_vector_store()
+    print("Vector store built successfully.")
 
 app = FastAPI(
     title="Customer Service Chatbot API",
