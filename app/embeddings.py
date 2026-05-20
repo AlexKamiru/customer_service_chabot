@@ -2,7 +2,7 @@ import os
 import faiss
 import numpy as np
 import pickle
-import anthropic
+import voyageai
 
 from app.config import (
     DATA_PATH,
@@ -11,9 +11,8 @@ from app.config import (
 )
 
 # anthropic client 
-client = anthropic.Anthropic()
+client = voyageai.Client()
 
-EMBEDDING_MODEL = "voyage-3-lite"
 EMBEDDING_DIMENSION = 512
 
 def load_documents():
@@ -49,12 +48,8 @@ def create_embeddings(texts):
 
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
-        response = client.embeddings.create(
-            model = EMBEDDING_MODEL,
-            input = batch,
-        )
-        batch_embeddings = [item.embedding for item in response.data]
-        all_embeddings.extend(batch_embeddings)
+        response = client.embed(batch, model="voyage-3-lite")
+        all_embeddings.extend(response.embeddings)
 
     return np.array(all_embeddings,dtype="float32")    
 

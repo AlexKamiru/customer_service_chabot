@@ -9,16 +9,14 @@ Now returns RetrievedChunk objects(typed pydantic models).
 import faiss
 import numpy as np
 import pickle
-import anthropic
+import voyageai
 from typing import List
 
 from app.config import FAISS_INDEX_FILE, METADATA_FILE, TOP_K
 from app.schemas import RetrievedChunk   # <- Use the schema
 
 # Anthropic client
-client = anthropic.Anthropic()
-
-EMBEDDING_MODEL = "voyage-3-lite"
+client = voyageai.Client() #reads VOYAGE_API_KEY from env
 
 #Load FAISS index and metadata once
 try:
@@ -29,12 +27,8 @@ except Exception as e:
     raise RuntimeError(f"Failed to load vector store: {e}")
 
 def embed(texts: List[str]) -> np.ndarray:
-    response = client.embeddings.create(
-        model = EMBEDDING_MODEL,
-        input = texts,
-    )
-    embeddings = [item.embedding for item in response.data]
-    return np.array(embeddings, dtype="float32")
+    response = client.embed(texts, model="voyage-3-lite")
+    return np.array(response.embeddings, dtype="float32")
 
 def retrieve(query: str, top_k:int = TOP_K) -> List[RetrievedChunk]:
     """
