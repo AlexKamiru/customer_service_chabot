@@ -17,7 +17,7 @@ load_dotenv()
 
 client = Groq() #reads  api key from env automatically
 
-MODEL_NAME = "llama3-70b-8192" 
+MODEL_NAME = "llama-3.3-70b-versatile" 
 
 # ----------------------------
 # Query Function
