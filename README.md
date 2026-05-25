@@ -8,6 +8,30 @@ Built to demonstrate end-to-end ML engineering skills: from document indexing an
 **API Docs:** [chabot-api-m0na.onrender.com/docs](https://chabot-api-m0na.onrender.com/docs)
 
 ---
+##  Real Business Value
+
+Customer service is one of the most expensive operations in any business. Companies spend millions annually on support agents answering the same repetitive questions about orders, returns, and policies.
+
+This chatbot directly addresses that problem:
+
+**Cost Reduction**
+A single support agent handles ~50 tickets/day at a cost of $30,000+/year. This chatbot handles unlimited queries simultaneously at near-zero cost, freeing human agents to focus on complex issues that actually need human judgment.
+
+**Consistency**
+Human agents give inconsistent answers depending on experience and mood. This chatbot always answers from the same verified source documents, ensuring every customer gets the same accurate information.
+
+**24/7 Availability**
+Unlike human agents, the chatbot operates around the clock with no overtime costs — critical for businesses serving customers across different time zones.
+
+**Instant Onboarding**
+Adding a new product line or policy? Just drop a `.txt` file into the `data/` folder and restart — no retraining, no fine-tuning, no ML expertise required.
+
+**Transparency and Trust**
+Every answer includes citations showing exactly which document and section it came from. Businesses can audit responses and customers can verify information — something generic chatbots cannot offer.
+
+> In short: this system gives small and medium businesses access to enterprise-grade customer service automation without the enterprise price tag.
+---
+---
 
 ##  What This Project Does
 
